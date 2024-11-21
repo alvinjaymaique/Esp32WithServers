@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+</head>
+<body>
+  <h1>Real-Time Data Visualization from Multiple Servers</h1>
+  <h2>Server</h2>
+  <canvas id="myChart1" width="200" height="100"></canvas>
+
+  <script>
+    // Set up the chart context and configuration
+    // Time variable for the x-axis
+    // var time = 0;
+    const time = Math.floor(new Date().getTime() / 1000);
+    // Set up chart configurations for each server
+    const ctx = document.getElementById('myChart1').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],  // Time (x-axis)
+        datasets: [
+          {
+            label: 'Server 3000 Data',
+            data: [],
+            borderColor: 'rgba(75, 192, 192, 1)',  // Color for Server 3000
+            fill: false,
+          },
+          {
+            label: 'Server 3001 Data',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',  // Color for Server 3001
+            fill: false,
+          },
+          {
+            label: 'Server 3002 Data',
+            data: [],
+            borderColor: 'rgba(54, 162, 235, 1)',  // Color for Server 3002
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        scales: {
+          x: { type: 'linear', position: 'bottom' }
+        }
+      }
+    });
+   
+    function getCurrentTimeSec(){
+        return Math.floor(new Date().getTime() / 1000);
+    }
+
+    // Handle WebSocket data and update the chart
+    function handleSocketMessage(event, serverPort) {
+      const data = JSON.parse(event.data);
+      const timePassed = getCurrentTimeSec() - time;
+
+      // Update the chart with data from the corresponding server
+      if (serverPort === 3000) {
+        chart.data.labels.push(timePassed);
+        chart.data.datasets[0].data.push({ x: timePassed, y: data.value });
+      } else if (serverPort === 3001) {
+        chart.data.labels.push(timePassed);
+        chart.data.datasets[1].data.push({ x: timePassed, y: data.value });
+      } else if (serverPort === 3002) {
+        chart.data.labels.push(timePassed);
+        chart.data.datasets[2].data.push({ x: timePassed, y: data.value });
+      }
+
+      // Update the chart after adding new data
+      chart.update();
+      console.log(`Received value from server ${serverPort}: ${data.value}`);
+    }
+
+    // WebSocket connection for Server 1 (3000)
+    const socket1 = new WebSocket('ws://localhost:3000');
+    socket1.onmessage = (event) => handleSocketMessage(event, 3000);
+    socket1.onerror = (error) => console.error("WebSocket Error for Server 3000:", error);
+    socket1.onclose = () => console.log("WebSocket connection closed for Server 3000");
+
+    // WebSocket connection for Server 2 (3001)
+    const socket2 = new WebSocket('ws://localhost:3001');
+    socket2.onmessage = (event) => handleSocketMessage(event, 3001);
+    socket2.onerror = (error) => console.error("WebSocket Error for Server 3001:", error);
+    socket2.onclose = () => console.log("WebSocket connection closed for Server 3001");
+
+    // WebSocket connection for Server 3 (3002)
+    const socket3 = new WebSocket('ws://localhost:3002');
+    socket3.onmessage = (event) => handleSocketMessage(event, 3002);
+    socket3.onerror = (error) => console.error("WebSocket Error for Server 3002:", error);
+    socket3.onclose = () => console.log("WebSocket connection closed for Server 3002");
+  </script>
+</body>
+</html>
